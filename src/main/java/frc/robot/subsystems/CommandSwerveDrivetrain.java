@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.Utils;
+import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
@@ -10,6 +11,8 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.*;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.Matrix;
@@ -21,14 +24,16 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
-
+import frc.robot.Constants;
 import frc.robot.RobotContainer;
+import frc.robot.generated.TunerConstants;
 
 /**
  * Class that extends the Phoenix SwerveDrivetrain class and implements
  * subsystem so it can be used in command-based projects easily.
  */
-public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsystem {
+public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsystem 
+{
     private static final double kSimLoopPeriod = 0.005; // 5 ms
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
@@ -44,16 +49,22 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
     private final SwerveDrivePoseEstimator poseEstimator;
     private Pose2d poseMeters = new Pose2d();
 
+    private Pigeon2 pigeon = new Pigeon2(TunerConstants.kPigeonId);
+
+
     public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency,
-            SwerveModuleConstants... modules) {
+            SwerveModuleConstants... modules) 
+            {
         super(driveTrainConstants, OdometryUpdateFrequency, modules);
-        if (Utils.isSimulation()) {
+        if (Utils.isSimulation()) 
+        {
             startSimThread();
         }
 
         // Initialize the Pose Estimator
-        poseEstimator = new SwerveDrivePoseEstimator(
-                this.constants().kinematics,
+        poseEstimator = new SwerveDrivePoseEstimator
+        (
+                Constants.KINEMATICS,
                 getHeading(),
                 getModulePositions(),
                 new Pose2d(),
@@ -61,15 +72,18 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
                 visionMeasurementStdDevs());
     }
 
-    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, SwerveModuleConstants... modules) {
+    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, SwerveModuleConstants... modules) 
+    {
         super(driveTrainConstants, modules);
-        if (Utils.isSimulation()) {
+        if (Utils.isSimulation()) 
+        {
             startSimThread();
         }
 
         // Initialize the Pose Estimator
-        poseEstimator = new SwerveDrivePoseEstimator(
-                this.constants().kinematics,
+        poseEstimator = new SwerveDrivePoseEstimator
+        (
+                Constants.KINEMATICS,
                 getHeading(),
                 getModulePositions(),
                 new Pose2d(),
@@ -77,15 +91,18 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
                 visionMeasurementStdDevs());
     }
 
-    public Command applyRequest(Supplier<SwerveRequest> requestSupplier) {
+    public Command applyRequest(Supplier<SwerveRequest> requestSupplier) 
+    {
         return run(() -> this.setControl(requestSupplier.get()));
     }
 
-    private void startSimThread() {
+    private void startSimThread() 
+    {
         m_lastSimTime = Utils.getCurrentTimeSeconds();
 
         /* Run simulation at a faster rate so PID gains behave more reasonably */
-        m_simNotifier = new Notifier(() -> {
+        m_simNotifier = new Notifier(() -> 
+        {
             final double currentTime = Utils.getCurrentTimeSeconds();
             double deltaTime = currentTime - m_lastSimTime;
             m_lastSimTime = currentTime;
@@ -97,14 +114,17 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
     }
 
     @Override
-    public void periodic() {
+    public void periodic() 
+    {
         /* Periodically try to apply the operator perspective */
         /* If we haven't applied the operator perspective before, then we should apply it regardless of DS state */
         /* This allows us to correct the perspective in case the robot code restarts mid-match */
         /* Otherwise, only check and apply the operator perspective if the DS is disabled */
         /* This ensures driving behavior doesn't change until an explicit disable event occurs during testing*/
-        if (!hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
-            DriverStation.getAlliance().ifPresent((allianceColor) -> {
+        if (!hasAppliedOperatorPerspective || DriverStation.isDisabled()) 
+        {
+            DriverStation.getAlliance().ifPresent((allianceColor) -> 
+            {
                 this.setOperatorPerspectiveForward(
                         allianceColor == Alliance.Red ? RedAlliancePerspectiveRotation
                                 : BlueAlliancePerspectiveRotation);
@@ -119,7 +139,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
     /**
      * Updates the robot's odometry and incorporates vision measurements from Limelights.
      */
-    public void updateOdometry() {
+    public void updateOdometry() 
+    {
         // Update the pose estimator with the latest module states and gyro heading
         poseEstimator.update(
                 getHeading(),
@@ -129,14 +150,16 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
 
         // Front Limelight
         Pose2d visionPoseFront = getVisionPose(RobotContainer.limelightFront);
-        if (visionPoseFront != null) {
+        if (visionPoseFront != null) 
+        {
             double latencyFront = RobotContainer.limelightFront.getLatency() / 1000.0;
             poseEstimator.addVisionMeasurement(visionPoseFront, currentTime - latencyFront);
         }
 
         // Back Limelight
         Pose2d visionPoseBack = getVisionPose(RobotContainer.limelightBack);
-        if (visionPoseBack != null) {
+        if (visionPoseBack != null) 
+        {
             double latencyBack = RobotContainer.limelightBack.getLatency() / 1000.0;
             poseEstimator.addVisionMeasurement(visionPoseBack, currentTime - latencyBack);
         }
@@ -151,8 +174,10 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
      * @param limelight The Limelight to get data from.
      * @return The estimated Pose2d from vision data, or null if no target is found.
      */
-    public Pose2d getVisionPose(Limelight limelight) {
-        if (!limelight.hasTarget()) {
+    public Pose2d getVisionPose(Limelight limelight) 
+    {
+        if (!limelight.hasTarget()) 
+        {
             return null;
         }
 
@@ -176,7 +201,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
      *
      * @return The current Pose2d.
      */
-    public Pose2d getPose() {
+    public Pose2d getPose() 
+    {
         return poseMeters;
     }
 
@@ -185,8 +211,9 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
      *
      * @return The current heading.
      */
-    public Rotation2d getHeading() {
-        return Rotation2d.fromDegrees(this.getPigeon().getYaw().getValue());
+    public Rotation2d getHeading() 
+    {
+        return Rotation2d.fromDegrees(getPigeon().getYaw().getValue());
     }
 
     /**
@@ -194,21 +221,32 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
      *
      * @return An array of SwerveModulePosition.
      */
-    public SwerveModulePosition[] getModulePositions() {
-        return new SwerveModulePosition[] {
-                this.getModule(0).getPosition(),
-                this.getModule(1).getPosition(),
-                this.getModule(2).getPosition(),
-                this.getModule(3).getPosition()
+    public SwerveModulePosition[] getModulePositions() 
+    {
+        return new SwerveModulePosition[] 
+        {
+                this.getModule(0).getPosition(true),
+                this.getModule(1).getPosition(true),
+                this.getModule(2).getPosition(true),
+                this.getModule(3).getPosition(true)
         };
     }
+
+    public Pigeon2 getPigeon() 
+    {
+        return pigeon;
+    }
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Defines the standard deviations for the robot's state estimation.
      *
      * @return A matrix of standard deviations.
      */
-    private static Matrix<N3, N1> stateStdDevs() {
+    private static Matrix<N3, N1> stateStdDevs() 
+    {
         // x, y, theta (radians)
         return VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(5));
     }
@@ -218,7 +256,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
      *
      * @return A matrix of standard deviations.
      */
-    private static Matrix<N3, N1> visionMeasurementStdDevs() {
+    private static Matrix<N3, N1> visionMeasurementStdDevs() 
+    {
         // x, y, theta (radians)
         return VecBuilder.fill(0.5, 0.5, Units.degreesToRadians(10));
     }

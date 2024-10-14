@@ -72,7 +72,7 @@ public class TunerConstants {
     private static final boolean kInvertRightSide = true;
 
     private static final String kCANbusName = "";
-    private static final int kPigeonId = 50;
+    public static final int kPigeonId = 50;
 
 
     // These are only used for simulation
@@ -115,8 +115,8 @@ public class TunerConstants {
     private static final double kFrontLeftEncoderOffset = -0.283447265625;
     private static final boolean kFrontLeftSteerInvert = true;
 
-    private static final double kFrontLeftXPosInches = 10.5;
-    private static final double kFrontLeftYPosInches = 10.5;
+    public static final double kFrontLeftXPosInches = 10.5;
+    public static final double kFrontLeftYPosInches = 10.5;
 
     // Front Right
     private static final int kFrontRightDriveMotorId = 13;
@@ -125,8 +125,8 @@ public class TunerConstants {
     private static final double kFrontRightEncoderOffset = 0.4287109375;
     private static final boolean kFrontRightSteerInvert = true;
 
-    private static final double kFrontRightXPosInches = 10.5;
-    private static final double kFrontRightYPosInches = -10.5;
+    public static final double kFrontRightXPosInches = 10.5;
+    public static final double kFrontRightYPosInches = -10.5;
 
     // Back Left
     private static final int kBackLeftDriveMotorId = 17;
@@ -135,8 +135,8 @@ public class TunerConstants {
     private static final double kBackLeftEncoderOffset = 0.185302734375;
     private static final boolean kBackLeftSteerInvert = true;
 
-    private static final double kBackLeftXPosInches = -10.5;
-    private static final double kBackLeftYPosInches = 10.5;
+    public static final double kBackLeftXPosInches = -10.5;
+    public static final double kBackLeftYPosInches = 10.5;
 
     // Back Right
     private static final int kBackRightDriveMotorId = 15;
@@ -145,8 +145,8 @@ public class TunerConstants {
     private static final double kBackRightEncoderOffset = -0.021484375;
     private static final boolean kBackRightSteerInvert = true;
 
-    private static final double kBackRightXPosInches = -10.5;
-    private static final double kBackRightYPosInches = -10.5;
+    public static final double kBackRightXPosInches = -10.5;
+    public static final double kBackRightYPosInches = -10.5;
 
 
     private static final SwerveModuleConstants FrontLeft = ConstantCreator.createModuleConstants(
