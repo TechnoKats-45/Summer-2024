@@ -1,0 +1,67 @@
+import edu.wpi.first.wpilibj2.command.CommandBase;
+import com.sleipnirgroup.choreo.trajectory.ChoreoTrajectory;
+
+// EXAMPLE - Still in the works // TODO
+
+public class C-123 extends CommandBase 
+{
+    private final CommandSwerveDrivetrain swerveDrivetrain;
+    private final ChoreoTrajectory trajectory;
+    private final List<Waypoint> waypoints;
+    private int currentWaypointIndex = 0;
+
+    public C-123(CommandSwerveDrivetrain drivetrain, ChoreoTrajectory trajectory) 
+    {
+        this.swerveDrivetrain = drivetrain;
+        this.trajectory = trajectory;
+        this.waypoints = trajectory.getWaypoints();
+
+        addRequirements(swerveDrivetrain);
+    }
+
+@Override
+    public void execute() 
+    {
+        // Check if we have reached the next waypoint
+        if (swerveDrivetrain.hasReachedWaypoint(waypoints.get(currentWaypointIndex))) 
+        {
+            // Check if the waypoint has an action (marker)
+            String marker = waypoints.get(currentWaypointIndex).getMarker();
+            if (marker != null) 
+            {
+                // Handle marker actions
+                switch (marker) 
+                {
+                    case "startIntake":
+                        startIntake();
+                        break;
+                    case "shoot":
+                        shoot();
+                        break;
+                    // Add more actions as needed
+                }
+            }
+            currentWaypointIndex++;
+        }
+        swerveDrivetrain.updateTrajectory();
+    }
+
+    @Override
+    public boolean isFinished() 
+    {
+        return swerveDrivetrain.isTrajectoryComplete();
+    }
+
+    private void startIntake() 
+    {
+        // Logic to start intake
+            // Call automatic-intake command
+        System.out.println("Starting Intake");
+    }
+
+    private void shoot() 
+    {
+        // Logic to shoot balls
+        System.out.println("Shooting");
+    }
+}

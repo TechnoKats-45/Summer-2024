@@ -15,12 +15,21 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.networktables.NetworkTableEntry;
+
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
 import frc.robot.subsystems.Limelight;
 
+
+
 public class RobotContainer 
 {
+  private final SendableChooser<String> autoChooser = new SendableChooser<>();
+
   private double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps; // kSpeedAt12VoltsMps desired top speed
   private double MaxAngularRate = 1.5 * Math.PI; // 3/4 of a rotation per second max angular velocity
 
@@ -47,8 +56,7 @@ public class RobotContainer
   private void configureBindings() 
   {
     drivetrain.setDefaultCommand( // Drivetrain will execute this command periodically
-        drivetrain.applyRequest(() -> drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with
-                                                                                           // negative Y (forward)
+        drivetrain.applyRequest(() -> drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
             .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
             .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
         ));
@@ -75,6 +83,14 @@ public class RobotContainer
   public RobotContainer() 
   {
     configureBindings();
+
+    autoChooser.setDefaultOption("Default Auto", "defaultPath");  // ALWAYS TODO - Make sure paths listed here are actual paths we want before competition  // TODO - Somehow display image of path when selected
+    autoChooser.addOption("Path 1", "path1");
+    autoChooser.addOption("Path 2", "path2");
+    autoChooser.addOption("Path 3", "path3");
+
+    // Add chooser to Shuffleboard
+    Shuffleboard.getTab("Autonomous").add("Auto Mode", autoChooser);
   }
 
   public Command getAutonomousCommand() 
