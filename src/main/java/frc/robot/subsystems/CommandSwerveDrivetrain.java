@@ -8,13 +8,21 @@ import com.ctre.phoenix6.mechanisms.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.mechanisms.swerve.SwerveRequest;
 
-import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
+import edu.wpi.first.math.geometry.*;
+import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
+
+import frc.robot.RobotContainer;
 
 /**
  * Class that extends the Phoenix SwerveDrivetrain class and implements
@@ -32,17 +40,41 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
     /* Keep track if we've ever applied the operator perspective before or not */
     private boolean hasAppliedOperatorPerspective = false;
 
-    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency, SwerveModuleConstants... modules) {
+    // Pose Estimator to fuse odometry and vision data
+    private final SwerveDrivePoseEstimator poseEstimator;
+    private Pose2d poseMeters = new Pose2d();
+
+    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency,
+            SwerveModuleConstants... modules) {
         super(driveTrainConstants, OdometryUpdateFrequency, modules);
         if (Utils.isSimulation()) {
             startSimThread();
         }
+
+        // Initialize the Pose Estimator
+        poseEstimator = new SwerveDrivePoseEstimator(
+                this.constants().kinematics,
+                getHeading(),
+                getModulePositions(),
+                new Pose2d(),
+                stateStdDevs(),
+                visionMeasurementStdDevs());
     }
+
     public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, SwerveModuleConstants... modules) {
         super(driveTrainConstants, modules);
         if (Utils.isSimulation()) {
             startSimThread();
         }
+
+        // Initialize the Pose Estimator
+        poseEstimator = new SwerveDrivePoseEstimator(
+                this.constants().kinematics,
+                getHeading(),
+                getModulePositions(),
+                new Pose2d(),
+                stateStdDevs(),
+                visionMeasurementStdDevs());
     }
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier) {
@@ -79,5 +111,115 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
                 hasAppliedOperatorPerspective = true;
             });
         }
+
+        // Update odometry with fused vision measurements
+        updateOdometry();
+    }
+
+    /**
+     * Updates the robot's odometry and incorporates vision measurements from Limelights.
+     */
+    public void updateOdometry() {
+        // Update the pose estimator with the latest module states and gyro heading
+        poseEstimator.update(
+                getHeading(),
+                getModulePositions());
+
+        double currentTime = Timer.getFPGATimestamp();
+
+        // Front Limelight
+        Pose2d visionPoseFront = getVisionPose(RobotContainer.limelightFront);
+        if (visionPoseFront != null) {
+            double latencyFront = RobotContainer.limelightFront.getLatency() / 1000.0;
+            poseEstimator.addVisionMeasurement(visionPoseFront, currentTime - latencyFront);
+        }
+
+        // Back Limelight
+        Pose2d visionPoseBack = getVisionPose(RobotContainer.limelightBack);
+        if (visionPoseBack != null) {
+            double latencyBack = RobotContainer.limelightBack.getLatency() / 1000.0;
+            poseEstimator.addVisionMeasurement(visionPoseBack, currentTime - latencyBack);
+        }
+
+        // Update the stored pose
+        poseMeters = poseEstimator.getEstimatedPosition();
+    }
+
+    /**
+     * Retrieves the robot's pose from the Limelight's onboard calculations.
+     *
+     * @param limelight The Limelight to get data from.
+     * @return The estimated Pose2d from vision data, or null if no target is found.
+     */
+    public Pose2d getVisionPose(Limelight limelight) {
+        if (!limelight.hasTarget()) {
+            return null;
+        }
+
+        double[] botpose = limelight.getBotPose();
+        if (botpose.length < 6) {
+            // Incomplete data received
+            return null;
+        }
+
+        // Extract pose data from botpose array
+        double x = botpose[0]; // X position in meters
+        double y = botpose[1]; // Y position in meters
+        double thetaDegrees = botpose[5]; // Yaw in degrees
+        Rotation2d rotation = Rotation2d.fromDegrees(thetaDegrees);
+
+        return new Pose2d(x, y, rotation);
+    }
+
+    /**
+     * Returns the robot's estimated pose.
+     *
+     * @return The current Pose2d.
+     */
+    public Pose2d getPose() {
+        return poseMeters;
+    }
+
+    /**
+     * Returns the robot's heading as a Rotation2d.
+     *
+     * @return The current heading.
+     */
+    public Rotation2d getHeading() {
+        return Rotation2d.fromDegrees(this.getPigeon().getYaw().getValue());
+    }
+
+    /**
+     * Returns the positions of the swerve modules.
+     *
+     * @return An array of SwerveModulePosition.
+     */
+    public SwerveModulePosition[] getModulePositions() {
+        return new SwerveModulePosition[] {
+                this.getModule(0).getPosition(),
+                this.getModule(1).getPosition(),
+                this.getModule(2).getPosition(),
+                this.getModule(3).getPosition()
+        };
+    }
+
+    /**
+     * Defines the standard deviations for the robot's state estimation.
+     *
+     * @return A matrix of standard deviations.
+     */
+    private static Matrix<N3, N1> stateStdDevs() {
+        // x, y, theta (radians)
+        return VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(5));
+    }
+
+    /**
+     * Defines the standard deviations for the vision measurements.
+     *
+     * @return A matrix of standard deviations.
+     */
+    private static Matrix<N3, N1> visionMeasurementStdDevs() {
+        // x, y, theta (radians)
+        return VecBuilder.fill(0.5, 0.5, Units.degreesToRadians(10));
     }
 }

@@ -16,10 +16,16 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.generated.TunerConstants;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
+import frc.robot.subsystems.Limelight;
 
-public class RobotContainer {
+public class RobotContainer 
+{
   private double MaxSpeed = TunerConstants.kSpeedAt12VoltsMps; // kSpeedAt12VoltsMps desired top speed
   private double MaxAngularRate = 1.5 * Math.PI; // 3/4 of a rotation per second max angular velocity
+
+  // Declaration of Limelights -                                                                                      TODO - Change to actual limelight names
+  public static Limelight limelightFront = new Limelight("limelight-front");
+  public static Limelight limelightBack = new Limelight("limelight-back");
 
   /* Setting up bindings for necessary control of the swerve drive platform */
   private final CommandXboxController joystick = new CommandXboxController(0); // My joystick
@@ -34,7 +40,8 @@ public class RobotContainer {
 
   private final Telemetry logger = new Telemetry(MaxSpeed);
 
-  private void configureBindings() {
+  private void configureBindings() 
+  {
     drivetrain.setDefaultCommand( // Drivetrain will execute this command periodically
         drivetrain.applyRequest(() -> drive.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with
                                                                                            // negative Y (forward)
@@ -49,17 +56,20 @@ public class RobotContainer {
     // reset the field-centric heading on left bumper press
     joystick.leftBumper().onTrue(drivetrain.runOnce(() -> drivetrain.seedFieldRelative()));
 
-    if (Utils.isSimulation()) {
+    if (Utils.isSimulation()) 
+    {
       drivetrain.seedFieldRelative(new Pose2d(new Translation2d(), Rotation2d.fromDegrees(90)));
     }
     drivetrain.registerTelemetry(logger::telemeterize);
   }
 
-  public RobotContainer() {
+  public RobotContainer() 
+  {
     configureBindings();
   }
 
-  public Command getAutonomousCommand() {
+  public Command getAutonomousCommand() 
+  {
     return Commands.print("No autonomous command configured");
   }
 }
