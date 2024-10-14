@@ -52,9 +52,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
     private Pigeon2 pigeon = new Pigeon2(TunerConstants.kPigeonId);
 
 
-    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency,
-            SwerveModuleConstants... modules) 
-            {
+    public CommandSwerveDrivetrain(SwerveDrivetrainConstants driveTrainConstants, double OdometryUpdateFrequency,SwerveModuleConstants... modules) 
+        {
         super(driveTrainConstants, OdometryUpdateFrequency, modules);
         if (Utils.isSimulation()) 
         {
@@ -182,7 +181,8 @@ public class CommandSwerveDrivetrain extends SwerveDrivetrain implements Subsyst
         }
 
         double[] botpose = limelight.getBotPose();
-        if (botpose.length < 6) {
+        if (botpose.length < 6) 
+        {
             // Incomplete data received
             return null;
         }

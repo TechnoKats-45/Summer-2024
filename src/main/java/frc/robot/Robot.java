@@ -8,18 +8,21 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
-public class Robot extends TimedRobot {
+public class Robot extends TimedRobot 
+{
   private Command m_autonomousCommand;
 
   private RobotContainer m_robotContainer;
 
   @Override
-  public void robotInit() {
+  public void robotInit() 
+  {
     m_robotContainer = new RobotContainer();
   }
 
   @Override
-  public void robotPeriodic() {
+  public void robotPeriodic() 
+  {
     CommandScheduler.getInstance().run(); 
   }
 
@@ -33,10 +36,12 @@ public class Robot extends TimedRobot {
   public void disabledExit() {}
 
   @Override
-  public void autonomousInit() {
+  public void autonomousInit() 
+  {
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
-    if (m_autonomousCommand != null) {
+    if (m_autonomousCommand != null) 
+    {
       m_autonomousCommand.schedule();
     }
   }
@@ -48,8 +53,10 @@ public class Robot extends TimedRobot {
   public void autonomousExit() {}
 
   @Override
-  public void teleopInit() {
-    if (m_autonomousCommand != null) {
+  public void teleopInit() 
+  {
+    if (m_autonomousCommand != null) 
+    {
       m_autonomousCommand.cancel();
     }
   }
@@ -61,7 +68,8 @@ public class Robot extends TimedRobot {
   public void teleopExit() {}
 
   @Override
-  public void testInit() {
+  public void testInit() 
+  {
     CommandScheduler.getInstance().cancelAll();
   }
 
